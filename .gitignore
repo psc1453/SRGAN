@@ -3,3 +3,5 @@ data/*
 training_results/*
 epochs/*
 statistics/*
+model_file/*
+__pycache__
