@@ -45,11 +45,14 @@ class TrainDatasetFromFolder(Dataset):
         crop_size = calculate_valid_crop_size(crop_size, upscale_factor)
         self.hr_transform = train_hr_transform(crop_size)
         self.lr_transform = train_lr_transform(crop_size, upscale_factor)
+        self.hr_image = []
+        self.lr_image = []
+        for index in range(len(self.image_filenames)):
+            self.hr_image.append(self.hr_transform(Image.open(self.image_filenames[index])))
+            self.lr_image.append(self.lr_transform(self.hr_image[index]))
 
     def __getitem__(self, index):
-        hr_image = self.hr_transform(Image.open(self.image_filenames[index]))
-        lr_image = self.lr_transform(hr_image)
-        return lr_image, hr_image
+        return self.lr_image[index], self.hr_image[index]
 
     def __len__(self):
         return len(self.image_filenames)
