@@ -1,0 +1,5 @@
+data/*
+.idea
+training_results/*
+epochs/*
+statistics/*
