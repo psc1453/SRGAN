@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import torch
 import torchvision.utils as utils
-from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -40,8 +39,6 @@ if not os.path.exists(out_path):
 
 for image_name, lr_image, hr_restore_img, hr_image in test_bar:
     image_name = image_name[0]
-    lr_image = Variable(lr_image, volatile=True)
-    hr_image = Variable(hr_image, volatile=True)
     if torch.cuda.is_available():
         lr_image = lr_image.cuda()
         hr_image = hr_image.cuda()
@@ -49,7 +46,7 @@ for image_name, lr_image, hr_restore_img, hr_image in test_bar:
     sr_image = model(lr_image)
     mse = ((hr_image - sr_image) ** 2).data.mean()
     psnr = 10 * log10(1 / mse)
-    ssim = pytorch_ssim.ssim(sr_image, hr_image).data[0]
+    ssim = pytorch_ssim.ssim(sr_image, hr_image).item()
 
     test_images = torch.stack(
         [display_transform()(hr_restore_img.squeeze(0)), display_transform()(hr_image.data.cpu().squeeze(0)),
