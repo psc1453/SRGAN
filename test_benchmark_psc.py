@@ -15,8 +15,8 @@ from data_utils import TestDatasetFromFolder, display_transform
 from model import Generator
 
 from ModelModifier.modifier.classes import NodeInsertMapping, NodeInsertMappingElement, FunctionPackage
-from ModelModifier.modifier.utils import generate_quantized_module
-from ModelModifier.tools.quantization import quantize_model_parameters_with_original_scale, \
+from ModelModifier.modifier.utils import insert_after
+from ModelModifier.tools.quantization.utils import quantize_model_parameters_with_original_scale, \
     quantize_tensor_with_original_scale
 
 parser = argparse.ArgumentParser(description='Test Benchmark Datasets')
@@ -65,13 +65,14 @@ def eval_one_epoch(model, dataloader, device):
 def get_quant_model(model, weight=32, bias=32, conv=32):
     quantized_by_parameters_model = quantize_model_parameters_with_original_scale(model_input=model,
                                                                                   weight_width=weight,
-                                                                                  bias_width=bias)
+                                                                                  bias_width=bias,
+                                                                                  by_channel=True)
     mapping = NodeInsertMapping()
     quantize_8bit_function_package = FunctionPackage(quantize_tensor_with_original_scale, {'width': conv})
     conv2d_config = NodeInsertMappingElement(torch.nn.Conv2d, quantize_8bit_function_package)
     mapping.add_config(conv2d_config)
 
-    new = generate_quantized_module(model_input=quantized_by_parameters_model, insert_mapping=mapping)
+    new = insert_after(model_input=quantized_by_parameters_model, insert_mapping=mapping)
     return new
 
 
@@ -80,6 +81,7 @@ def main():
     MODEL_NAME = opt.model_name
 
     model = Generator(UPSCALE_FACTOR).eval()
+    device = 'cpu'
     if torch.backends.mps.is_available():
         device = 'mps'
         model = model.to(device)
@@ -110,7 +112,7 @@ def main():
     plt.xlabel('Weight Width/Bits')
     plt.ylabel('PSNR/dB')
     plt.grid(alpha=0.4, linestyle=':')
-    # plt.show()
+    plt.show()
     psnr_list = {}
     ssim_list = {}
     for bias_w in tqdm(range(1, 33)):
